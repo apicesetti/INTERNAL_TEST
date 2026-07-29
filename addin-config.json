@@ -1,0 +1,17 @@
+{
+    "id": "aCesettiApiTester01",
+    "name": "API Tester - Cesetti",
+    "supportEmail": "mt@cesetti.com.ar",
+    "version": "1.0.0",
+    "items": [
+        {
+            "url": "https://apicesetti.github.io/MyGeotab_Cesetti/api_tester/static/index.html",
+            "path": "ActivityLink",
+            "menuName": {
+                "es": "API Tester"
+            },
+            "icon": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0iIzU1NSI+PHBhdGggZD0iTTIyLjcgMTkuNGwtNy4xLTcuMWMuOS0yLjMuNC01LTEuNS02LjktMi0yLTUtMi41LTcuNC0xLjRsNC4yIDQuMi0zIDMtNC4yLTQuMkMyLjMgOC42IDIuOCAxMS42IDQuOCAxMy42YzEuOSAxLjkgNC42IDIuNCA2LjkgMS41bDcuMSA3LjFjLjQuNCAxIC40IDEuNCAwbDIuNS0yLjVjLjUtLjQuNS0xLjEgMC0xLjN6Ii8+PC9zdmc+"
+        }
+    ],
+    "files": {}
+}

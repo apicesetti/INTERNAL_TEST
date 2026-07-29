@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<title>API Tester - Cesetti</title>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div id="apiTesterRoot">
+  <div class="center-msg" id="standaloneMsg">Esta página está pensada para abrirse como Add-In dentro de MyGeotab.</div>
+
+  <div id="app" style="display:none">
+
+    <section class="panel">
+      <h2>Sesión activa</h2>
+      <table class="kv" id="sessionTable"></table>
+    </section>
+
+    <section class="panel">
+      <h2>Llamada a la API de MyGeotab</h2>
+      <label for="apiMethod">Método</label>
+      <input id="apiMethod" value="Get" />
+
+      <label for="apiParams">Parámetros (JSON)</label>
+      <textarea id="apiParams" rows="7">{
+  "typeName": "Device",
+  "search": { "serialNumber": "GA0EAX9669NX" },
+  "resultsLimit": 1
+}</textarea>
+
+      <button id="apiCallBtn">Ejecutar</button>
+      <span class="hint">api.call(método, parámetros)</span>
+      <pre class="result" id="apiResult"></pre>
+    </section>
+
+    <section class="panel">
+      <h2>Endpoint HTTP crudo (ej: media-services / DeviceMappings)</h2>
+      <div class="presets">
+        <button data-preset="get" type="button">Preset: GET DeviceMappings</button>
+        <button data-preset="post" type="button">Preset: POST DeviceMappings</button>
+        <button data-preset="delete" type="button">Preset: DELETE DeviceMappings/:id</button>
+      </div>
+
+      <label for="rawMethod">Método HTTP</label>
+      <select id="rawMethod">
+        <option>GET</option>
+        <option>POST</option>
+        <option>DELETE</option>
+        <option>PUT</option>
+      </select>
+
+      <label for="rawUrl">URL</label>
+      <input id="rawUrl" value="https://media-services.geotab.com/api/DeviceMappings" />
+
+      <label for="rawPath">Header x-mygeotab-path</label>
+      <input id="rawPath" value="https://my.geotab.com" />
+
+      <label for="rawBody">Body (JSON, si aplica)</label>
+      <textarea id="rawBody" rows="5" placeholder='{"partnerId":"surfsight","partnerDeviceId":"...","associatedDeviceSerialNumber":"..."}'></textarea>
+
+      <button id="rawCallBtn">Enviar</button>
+      <span class="hint" id="rawStatus"></span>
+      <pre class="result" id="rawResult"></pre>
+      <p class="warn">Nota: esta llamada sale directo desde el navegador (fetch cross-origin) hacia media-services.geotab.com. Si el hosting del add-in no está en un dominio permitido por su CORS, el navegador la va a bloquear — en ese caso usar test.py / un script server-side para esa prueba puntual.</p>
+    </section>
+
+  </div>
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>
