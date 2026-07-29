@@ -58,13 +58,23 @@ geotab.addin.apiTester = function () {
     table.appendChild(revealRow);
   }
 
+  function setCallButtonsEnabled(enabled) {
+    $('apiCallBtn').disabled = !enabled;
+    $('rawCallBtn').disabled = !enabled;
+  }
+
   function loadSession(api) {
+    currentSession = null;
+    setCallButtonsEnabled(false);
+    $('sessionTable').innerHTML = '<tr><td colspan="2">Cargando sesión...</td></tr>';
+
     api.getSession(function (session) {
       currentSession = session;
       renderSession(session);
       if (!$('rawPath').value) {
         $('rawPath').value = 'https://' + (session.server || 'my.geotab.com');
       }
+      setCallButtonsEnabled(true);
     }, function (error) {
       $('sessionTable').innerHTML = '<tr><td colspan="2">Error obteniendo la sesión: ' + prettyPrint(error) + '</td></tr>';
     });
