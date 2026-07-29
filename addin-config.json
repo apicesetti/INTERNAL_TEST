@@ -5,7 +5,7 @@
     "version": "1.0.0",
     "items": [
         {
-            "url": "https://apicesetti.github.io/MyGeotab_Cesetti/api_tester/static/index.html",
+            "url": "https://apicesetti.github.io/INTERNAL_TEST/static/index.html",
             "path": "ActivityLink",
             "menuName": {
                 "es": "API Tester"
