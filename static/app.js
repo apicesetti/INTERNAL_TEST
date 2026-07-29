@@ -68,16 +68,18 @@ geotab.addin.apiTester = function () {
     setCallButtonsEnabled(false);
     $('sessionTable').innerHTML = '<tr><td colspan="2">Cargando sesión...</td></tr>';
 
-    api.getSession(function (session) {
-      currentSession = session;
-      renderSession(session);
-      if (!$('rawPath').value) {
-        $('rawPath').value = 'https://' + (session.server || 'my.geotab.com');
-      }
-      setCallButtonsEnabled(true);
-    }, function (error) {
-      $('sessionTable').innerHTML = '<tr><td colspan="2">Error obteniendo la sesión: ' + prettyPrint(error) + '</td></tr>';
-    });
+    try {
+      api.getSession(function (session) {
+        currentSession = session;
+        renderSession(session);
+        if (!$('rawPath').value) {
+          $('rawPath').value = 'https://' + (session.server || 'my.geotab.com');
+        }
+        setCallButtonsEnabled(true);
+      });
+    } catch (e) {
+      $('sessionTable').innerHTML = '<tr><td colspan="2">api.getSession() falló: ' + prettyPrint(e && e.message || e) + '</td></tr>';
+    }
   }
 
   function runApiCall() {
