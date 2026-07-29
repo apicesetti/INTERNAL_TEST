@@ -62,7 +62,7 @@
       <button id="rawCallBtn">Enviar</button>
       <span class="hint" id="rawStatus"></span>
       <pre class="result" id="rawResult"></pre>
-      <p class="warn">Nota: esta llamada sale directo desde el navegador (fetch cross-origin) hacia media-services.geotab.com. Si el hosting del add-in no está en un dominio permitido por su CORS, el navegador la va a bloquear — en ese caso usar test.py / un script server-side para esa prueba puntual.</p>
+      <p class="warn">Nota: esta llamada sale directo desde el navegador (fetch cross-origin) hacia media-services.geotab.com. Verificado: ese endpoint responde con <code>access-control-allow-origin: *</code> para GET/POST/DELETE, así que no debería bloquearla el navegador sin importar dónde esté hosteado el add-in.</p>
     </section>
 
   </div>
