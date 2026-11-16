@@ -18,6 +18,68 @@
     </section>
 
     <section class="panel">
+      <h2>Consulta rápida por dispositivo (Get)</h2>
+
+      <div class="row">
+        <div class="col">
+          <label for="devFilter">Filtrar vehículos</label>
+          <input id="devFilter" placeholder="nombre o serie..." />
+        </div>
+        <div class="col col-2">
+          <label for="devSelect">Dispositivo <span class="hint" id="devCount"></span></label>
+          <select id="devSelect"><option value="">Cargando dispositivos...</option></select>
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="col">
+          <label for="qType">Tipo de dato</label>
+          <select id="qType">
+            <option value="LogRecord">LogRecord (posiciones GPS)</option>
+            <option value="Trip">Trip (viajes)</option>
+            <option value="ExceptionEvent">ExceptionEvent (excepciones / reglas)</option>
+            <option value="StatusData">StatusData (datos de motor)</option>
+            <option value="FaultData">FaultData (fallas)</option>
+            <option value="DriverChange">DriverChange (cambios de conductor)</option>
+          </select>
+        </div>
+        <div class="col">
+          <label for="qFrom">Desde</label>
+          <input id="qFrom" type="datetime-local" />
+        </div>
+        <div class="col">
+          <label for="qTo">Hasta</label>
+          <input id="qTo" type="datetime-local" />
+        </div>
+        <div class="col col-small">
+          <label for="qLimit">Límite</label>
+          <input id="qLimit" type="number" min="1" value="500" />
+        </div>
+      </div>
+
+      <div class="row" id="diagRow" style="display:none">
+        <div class="col">
+          <label for="qDiag">Diagnostic id (opcional, ej: DiagnosticEngineSpeedId)</label>
+          <input id="qDiag" placeholder="vacío = todos los diagnósticos" />
+        </div>
+      </div>
+
+      <button id="qRunBtn" type="button">Consultar</button>
+      <button id="qCopyBtn" type="button" class="secondary">Pasar a llamada genérica</button>
+      <span class="hint" id="qStatus"></span>
+
+      <label>Parámetros enviados</label>
+      <pre class="result params" id="qParams"></pre>
+
+      <div class="table-wrap"><table class="grid" id="qTable"></table></div>
+
+      <details>
+        <summary>JSON completo</summary>
+        <pre class="result" id="qResult"></pre>
+      </details>
+    </section>
+
+    <section class="panel">
       <h2>Llamada a la API de MyGeotab</h2>
       <label for="apiMethod">Método</label>
       <input id="apiMethod" value="Get" />

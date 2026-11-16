@@ -63,6 +63,236 @@ geotab.addin.apiTester = function () {
     $('rawCallBtn').disabled = !enabled;
   }
 
+  // ---------------------------------------------------------------
+  // Consulta rápida por dispositivo
+  // ---------------------------------------------------------------
+
+  var allDevices = [];
+
+  // Columnas resumidas por tipo. Cada columna: [título, función(registro)]
+  function idOf(obj) { return obj && (obj.name || obj.id) || ''; }
+  function fmtDate(d) { return d ? new Date(d).toLocaleString() : ''; }
+
+  var COLUMNS = {
+    LogRecord: [
+      ['Fecha', function (r) { return fmtDate(r.dateTime); }],
+      ['Lat', function (r) { return r.latitude; }],
+      ['Lon', function (r) { return r.longitude; }],
+      ['Vel (km/h)', function (r) { return r.speed; }]
+    ],
+    Trip: [
+      ['Inicio', function (r) { return fmtDate(r.start); }],
+      ['Fin', function (r) { return fmtDate(r.stop); }],
+      ['Distancia (km)', function (r) { return r.distance != null ? r.distance.toFixed(2) : ''; }],
+      ['Manejo', function (r) { return r.drivingDuration; }],
+      ['Detenido', function (r) { return r.stopDuration; }],
+      ['Vel máx', function (r) { return r.maximumSpeed; }],
+      ['Conductor', function (r) { return idOf(r.driver); }]
+    ],
+    ExceptionEvent: [
+      ['Desde', function (r) { return fmtDate(r.activeFrom); }],
+      ['Hasta', function (r) { return fmtDate(r.activeTo); }],
+      ['Regla', function (r) { return ruleNames[r.rule && r.rule.id] || idOf(r.rule); }],
+      ['Duración', function (r) { return r.duration; }],
+      ['Distancia', function (r) { return r.distance; }],
+      ['Estado', function (r) { return r.state; }]
+    ],
+    StatusData: [
+      ['Fecha', function (r) { return fmtDate(r.dateTime); }],
+      ['Diagnóstico', function (r) { return idOf(r.diagnostic); }],
+      ['Valor', function (r) { return r.data; }]
+    ],
+    FaultData: [
+      ['Fecha', function (r) { return fmtDate(r.dateTime); }],
+      ['Diagnóstico', function (r) { return idOf(r.diagnostic); }],
+      ['Modo de falla', function (r) { return idOf(r.failureMode); }],
+      ['Estado', function (r) { return r.faultState; }]
+    ],
+    DriverChange: [
+      ['Fecha', function (r) { return fmtDate(r.dateTime); }],
+      ['Conductor', function (r) { return idOf(r.driver); }],
+      ['Tipo', function (r) { return r.type; }]
+    ]
+  };
+
+  var ruleNames = {};
+
+  function toLocalInput(date) {
+    var pad = function (n) { return (n < 10 ? '0' : '') + n; };
+    return date.getFullYear() + '-' + pad(date.getMonth() + 1) + '-' + pad(date.getDate()) +
+      'T' + pad(date.getHours()) + ':' + pad(date.getMinutes());
+  }
+
+  function setDefaultDates() {
+    var now = new Date();
+    var yesterday = new Date(now.getTime() - 24 * 3600 * 1000);
+    if (!$('qFrom').value) $('qFrom').value = toLocalInput(yesterday);
+    if (!$('qTo').value) $('qTo').value = toLocalInput(now);
+  }
+
+  function renderDeviceOptions() {
+    var filter = $('devFilter').value.trim().toLowerCase();
+    var select = $('devSelect');
+    var previous = select.value;
+    select.innerHTML = '';
+
+    var shown = allDevices.filter(function (d) {
+      if (!filter) return true;
+      return (d.name || '').toLowerCase().indexOf(filter) >= 0 ||
+        (d.serialNumber || '').toLowerCase().indexOf(filter) >= 0;
+    });
+
+    shown.forEach(function (d) {
+      var opt = document.createElement('option');
+      opt.value = d.id;
+      opt.textContent = d.name + (d.serialNumber ? '  (' + d.serialNumber + ')' : '');
+      select.appendChild(opt);
+    });
+
+    if (!shown.length) {
+      select.innerHTML = '<option value="">Sin coincidencias</option>';
+    } else if (previous) {
+      select.value = previous;
+    }
+    $('devCount').textContent = shown.length + ' / ' + allDevices.length;
+  }
+
+  function loadDevices(api) {
+    $('devSelect').innerHTML = '<option value="">Cargando dispositivos...</option>';
+
+    // fromDate = ahora → solo dispositivos activos (no archivados)
+    var params = {
+      typeName: 'Device',
+      search: { fromDate: new Date().toISOString() },
+      propertySelector: { fields: ['id', 'name', 'serialNumber'], isIncluded: true }
+    };
+
+    var onOk = function (devices) {
+      allDevices = (devices || []).sort(function (a, b) {
+        return (a.name || '').localeCompare(b.name || '');
+      });
+      renderDeviceOptions();
+    };
+
+    api.call('Get', params, onOk, function () {
+      // Por si el servidor no soporta propertySelector, reintento sin él
+      delete params.propertySelector;
+      api.call('Get', params, onOk, function (err) {
+        $('devSelect').innerHTML = '<option value="">Error cargando dispositivos</option>';
+        $('qResult').textContent = 'Error:\n' + prettyPrint(err);
+      });
+    });
+
+    // Nombres de reglas para mostrar en las excepciones
+    api.call('Get', { typeName: 'Rule' }, function (rules) {
+      ruleNames = {};
+      (rules || []).forEach(function (r) { ruleNames[r.id] = r.name; });
+    }, function () { /* no crítico */ });
+  }
+
+  function buildQueryParams() {
+    var type = $('qType').value;
+    var deviceId = $('devSelect').value;
+    var fromVal = $('qFrom').value;
+    var toVal = $('qTo').value;
+
+    if (!deviceId) throw new Error('Elegí un dispositivo.');
+    if (!fromVal || !toVal) throw new Error('Completá las fechas Desde / Hasta.');
+
+    var search = {
+      deviceSearch: { id: deviceId },
+      fromDate: new Date(fromVal).toISOString(),
+      toDate: new Date(toVal).toISOString()
+    };
+
+    if (type === 'Trip') {
+      // incluye viajes que empezaron antes de "Desde" pero terminan dentro del rango
+      search.includeOverlappedTrips = true;
+    }
+
+    var diag = $('qDiag').value.trim();
+    if ((type === 'StatusData' || type === 'FaultData') && diag) {
+      search.diagnosticSearch = { id: diag };
+    }
+
+    return {
+      typeName: type,
+      search: search,
+      resultsLimit: parseInt($('qLimit').value, 10) || 500
+    };
+  }
+
+  function renderTable(type, rows) {
+    var table = $('qTable');
+    table.innerHTML = '';
+    var cols = COLUMNS[type];
+    if (!cols || !rows.length) return;
+
+    var thead = document.createElement('tr');
+    cols.forEach(function (c) {
+      var th = document.createElement('th');
+      th.textContent = c[0];
+      thead.appendChild(th);
+    });
+    table.appendChild(thead);
+
+    rows.slice(0, 200).forEach(function (r) {
+      var tr = document.createElement('tr');
+      cols.forEach(function (c) {
+        var td = document.createElement('td');
+        var v = c[1](r);
+        td.textContent = v == null ? '' : v;
+        tr.appendChild(td);
+      });
+      table.appendChild(tr);
+    });
+  }
+
+  function runQuery() {
+    var params;
+    try {
+      params = buildQueryParams();
+    } catch (e) {
+      $('qStatus').textContent = e.message;
+      return;
+    }
+
+    $('qParams').textContent = prettyPrint(params);
+    $('qStatus').textContent = 'Consultando...';
+    $('qTable').innerHTML = '';
+    $('qResult').textContent = '';
+
+    var t0 = Date.now();
+    currentApi.call('Get', params, function (result) {
+      var rows = result || [];
+      var ms = Date.now() - t0;
+      var msg = rows.length + ' registros en ' + ms + ' ms';
+      if (rows.length >= params.resultsLimit) msg += ' (se alcanzó el límite)';
+      if (rows.length > 200) msg += ' · tabla muestra los primeros 200';
+      $('qStatus').textContent = msg;
+      renderTable(params.typeName, rows);
+      $('qResult').textContent = prettyPrint(rows);
+    }, function (error) {
+      $('qStatus').textContent = 'Error';
+      $('qResult').textContent = 'Error:\n' + prettyPrint(error);
+    });
+  }
+
+  function copyToGeneric() {
+    try {
+      $('apiMethod').value = 'Get';
+      $('apiParams').value = prettyPrint(buildQueryParams());
+      $('apiParams').scrollIntoView({ behavior: 'smooth', block: 'center' });
+    } catch (e) {
+      $('qStatus').textContent = e.message;
+    }
+  }
+
+  function onTypeChange() {
+    var t = $('qType').value;
+    $('diagRow').style.display = (t === 'StatusData' || t === 'FaultData') ? 'block' : 'none';
+  }
+
   function loadSession(api) {
     currentSession = null;
     setCallButtonsEnabled(false);
@@ -178,6 +408,10 @@ geotab.addin.apiTester = function () {
   function wireEvents() {
     $('apiCallBtn').addEventListener('click', runApiCall);
     $('rawCallBtn').addEventListener('click', runRawCall);
+    $('qRunBtn').addEventListener('click', runQuery);
+    $('qCopyBtn').addEventListener('click', copyToGeneric);
+    $('qType').addEventListener('change', onTypeChange);
+    $('devFilter').addEventListener('input', renderDeviceOptions);
 
     var presetButtons = document.querySelectorAll('.presets button');
     for (var i = 0; i < presetButtons.length; i++) {
@@ -204,6 +438,8 @@ geotab.addin.apiTester = function () {
       $('standaloneMsg').style.display = 'none';
       $('app').style.display = 'block';
       loadSession(api);
+      setDefaultDates();
+      if (!allDevices.length) loadDevices(api);
     },
 
     blur: function () {
